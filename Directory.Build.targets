@@ -1,0 +1,18 @@
+<Project>
+
+  <!-- One place decides how Mapsicle is referenced, so no sample project repeats the condition. -->
+  <ItemGroup Condition="'$(UsesMapsicle)' == 'true' And '$(UseLocalMapsicle)' == 'true'">
+    <ProjectReference Include="$(MapsicleRepo)\src\Mapsicle\Mapsicle.csproj" />
+    <ProjectReference Include="$(MapsicleRepo)\src\Mapsicle.SourceGen\Mapsicle.SourceGen.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UsesMapsicle)' == 'true' And '$(UseLocalMapsicle)' != 'true'">
+    <PackageReference Include="Mapsicle" />
+    <PackageReference Include="Mapsicle.SourceGen">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

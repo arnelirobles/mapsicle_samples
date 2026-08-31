@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- BenchmarkDotNet refuses to run a Debug build, and it is right to. -->
+    <Configurations>Debug;Release</Configurations>
+    <!-- The generated extension is internal to the assembly that declares the pair, so declaring it
+         in Shop.Api does nothing for this project. It has to be declared here as well. -->
+    <UsesMapsicle>true</UsesMapsicle>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+    <ProjectReference Include="..\..\src\Shop.Api\Shop.Api.csproj" />
+  </ItemGroup>
+
+</Project>

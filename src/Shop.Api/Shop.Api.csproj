@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UsesMapsicle>true</UsesMapsicle>
+    <!-- Writing the generated file to disk, so the README can point at it. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <!--
+    The emitted files land inside the project directory, so the SDK globs them back in as ordinary
+    source and every generated type is defined twice. Excluding them is not optional here.
+  -->
+  <ItemGroup>
+    <Compile Remove="generated/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" />
+    <PackageReference Include="Riok.Mapperly" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,21 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!--
+    Builds against the published packages by default. If a Mapsicle checkout sits beside this one,
+    it builds against that instead, which is how the samples were verified before 2.2.0 shipped.
+    Set UseLocalMapsicle=false to force the packages even when the checkout is there.
+  -->
+  <PropertyGroup>
+    <MapsicleRepo>$(MSBuildThisFileDirectory)..\Mapsicle</MapsicleRepo>
+    <UseLocalMapsicle Condition="'$(UseLocalMapsicle)' == '' And Exists('$(MapsicleRepo)\src\Mapsicle\Mapsicle.csproj')">true</UseLocalMapsicle>
+    <UseLocalMapsicle Condition="'$(UseLocalMapsicle)' == ''">false</UseLocalMapsicle>
+  </PropertyGroup>
+
+</Project>

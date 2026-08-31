@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/bench/">
+    <Project Path="bench/Shop.Benchmarks/Shop.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Shop.Api/Shop.Api.csproj" />
+  </Folder>
+  <Project Path="../Mapsicle/src/Mapsicle.SourceGen/Mapsicle.SourceGen.csproj" />
+  <Project Path="../Mapsicle/src/Mapsicle/Mapsicle.csproj" />
+</Solution>
