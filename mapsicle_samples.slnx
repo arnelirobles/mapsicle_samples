@@ -1,10 +1,13 @@
 <Solution>
-  <Folder Name="/bench/">
-    <Project Path="bench/Shop.Benchmarks/Shop.Benchmarks.csproj" />
-  </Folder>
+  <!--
+    The two sample projects only. The Mapsicle projects are deliberately not members: the build
+    switches to a sibling ../Mapsicle checkout when one exists, and a solution that hardcodes that
+    path does not open for anyone who cloned this repository on its own.
+  -->
   <Folder Name="/src/">
     <Project Path="src/Shop.Api/Shop.Api.csproj" />
   </Folder>
-  <Project Path="../Mapsicle/src/Mapsicle.SourceGen/Mapsicle.SourceGen.csproj" />
-  <Project Path="../Mapsicle/src/Mapsicle/Mapsicle.csproj" />
+  <Folder Name="/bench/">
+    <Project Path="bench/Shop.Benchmarks/Shop.Benchmarks.csproj" />
+  </Folder>
 </Solution>
