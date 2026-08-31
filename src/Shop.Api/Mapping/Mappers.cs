@@ -6,7 +6,7 @@ using Shop.Api.Domain;
 
 // Declare the pair for Mapsicle's generator. One line, at the assembly, and the call site does
 // not change. See README for what that buys and what it does not.
-[assembly: MapsicleGenerate(typeof(Order), typeof(OrderDto))]      // refused, see MSG001 at build time
+[assembly: MapsicleGenerate(typeof(Order), typeof(OrderDto))]
 [assembly: MapsicleGenerate(typeof(Order), typeof(OrderSummaryDto))]
 
 namespace Shop.Api.Mapping;

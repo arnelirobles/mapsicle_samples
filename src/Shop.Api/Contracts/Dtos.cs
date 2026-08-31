@@ -92,12 +92,13 @@ public class CreateOrderLine
 
 public enum Channel { Web, Mobile, InStore }
 
-/// <summary>The flat projection, and the one Mapsicle's generator accepts.</summary>
+/// <summary>The flat projection, kept as the smallest case the generator handles.</summary>
 /// <remarks>
-/// OrderDto above is refused for generation, because its Id widens int to long and the emitter has
-/// no widening rule. That is not a workaround, it is the design: a refused pair keeps mapping
-/// through the engine and the call site does not change. This type is here so the repository shows
-/// both lanes rather than only the one it happens to hit.
+/// This type exists for a reason worth recording. OrderDto above used to be refused for generation,
+/// because its Id widens int to long and the emitter had no widening rule, so this was invented to
+/// give the samples something that would generate at all. The emitter handles the whole aggregate
+/// now and OrderDto generates, but the flat pair is still the clearest place to see what declaring
+/// a pair costs and buys, so it stays.
 /// </remarks>
 public class OrderSummaryDto
 {

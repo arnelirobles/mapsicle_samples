@@ -37,7 +37,7 @@ three side by side.
 
 | | Setup code | Build warnings | Runtime cost of a missed member |
 |---|---|---|---|
-| **Mapsicle** | none | none | there is nothing to miss |
+| **Mapsicle** | none, or one line per pair to bind it at compile time | none | there is nothing to miss |
 | **Mapperly** | 1 partial method | 12 `RMG020` | a build warning, before you ship |
 | **AutoMapper** | 9 `CreateMap` calls | none | the member comes back empty |
 
@@ -127,25 +127,34 @@ The call site does not change. `order.MapTo<OrderSummaryDto>()` still compiles, 
 emitted method rather than to the engine. See
 `src/Shop.Api/generated/` after a build.
 
-`Order` into `OrderDto` is also declared, and the generator **refuses it**:
+`Order` into `OrderDto` is declared too, and the whole nine type graph generates: the nesting, both
+collections, the widening, the enum into a string, the enum into a different enum, and both
+flattened paths. Read `src/Shop.Api/generated/` after a build to see exactly what came out.
 
-```
-warning MSG001: Cannot generate a mapper from 'Order' to 'OrderDto': 'Id' is a member the
-engine maps and this generator cannot emit ... The pair still maps through the runtime engine.
-```
+It did not always. Until the generator was widened it refused that pair on `Id`, which widens `int`
+to `long`, and `OrderSummaryDto` exists because something had to be left to demonstrate. That is
+worth keeping in view when reading any generator's marketing: the shapes it handles and the shapes
+your DTOs actually have are different questions.
 
-That refusal is the design. `Id` widens `int` to `long`, the emitter has no widening rule, and
-emitting a mapper that drops the member would return less than the engine does. The pair keeps
-working, at engine speed, and the build says so.
+Three things are still refused on purpose, and each is a refusal rather than a gap:
 
-Two things follow that are worth knowing before you try this on your own code:
+- **A cyclic graph.** Generated code has no depth ceiling and the engine has one, so emitting a
+  mapper that follows a cycle would produce a lane that aborts the process where the other returns.
+- **A destination member with a non-public setter.** Reflection writes one and generated code cannot.
+- **Anything into a string that is not an enum.** The engine formats through
+  `CultureInfo.InvariantCulture`, and re-deriving that in the emitter is how two implementations of
+  one rule start disagreeing.
+
+A refused pair keeps mapping through the engine, the build carries on, and the call site does not
+change.
+
+Two things worth knowing before you try this on your own code:
 
 - The generated extension is **internal to the assembly that declares the pair**. Declaring it in one
   project does nothing for another; `bench/Shop.Benchmarks` declares it again for exactly that
   reason.
-- If you turn on `EmitCompilerGeneratedFiles`, exclude the output folder from compilation.
-  It lands inside the project directory, the SDK globs it back in, and every generated type is
-  defined twice.
+- If you turn on `EmitCompilerGeneratedFiles`, exclude the output folder from compilation. It lands
+  inside the project directory, the SDK globs it back in, and every generated type is defined twice.
 
 ## Numbers
 
@@ -179,29 +188,37 @@ All five allocate exactly the destination object and nothing else.
 
 ### The whole graph: `Order` into `OrderDto`
 
-Nine types, three levels deep, two collections. Mapsicle's generator refuses this pair, so its entry
-is the runtime engine. No hand written baseline: this projection is around sixty lines by hand, and
-keeping it correct is the work these libraries exist to remove.
+Nine types, three levels deep, two collections, a widening, an enum into a string, an enum into a
+different enum and two flattened paths. Measured on a quiet machine against the same projection
+written out by hand, which is the only baseline worth having.
 
-| | Mean | Ratio | Allocated |
+| | Mean | vs hand written | Allocated |
 |---|---:|---:|---:|
-| Mapperly | 383.4 ns | 1.00 | 1.50 KB |
-| Mapsicle, engine | 529.9 ns | 1.39 | 1.41 KB |
-| AutoMapper | 946.8 ns | 2.74 | 1.48 KB |
+| hand written | 288.1 ns | 1.00 | 1.41 KB |
+| **Mapsicle, generated** | **288.4 ns** | **1.00** | **1.41 KB (1.00)** |
+| Mapsicle, generated via an untyped call site | 309.7 ns | 1.07 | 1.41 KB (1.00) |
+| Mapperly | 321.5 ns | 1.12 | 1.50 KB (1.07) |
 
-Read the ratios as a range, not as those three digits. A second full run of the identical benchmark
-gave Mapperly 396 ns, Mapsicle 640 ns and AutoMapper 852 ns, so across two runs Mapsicle's engine is
-**1.4x to 1.6x** Mapperly and AutoMapper is **2.2x to 2.7x** it. BenchmarkDotNet's error column
-measures consistency inside one process; it says nothing about whether a second run agrees, and here
-it does not. AutoMapper is the least stable of the three either way: 257 ns standard deviation on a
-947 ns mean in the run above.
+Three things in that table are worth more than the ordering.
 
-What holds across both runs is the ordering and the allocation. Mapperly wins, and it should: it
-emits straight-line C# for every type in the graph. Mapsicle's engine sits between it and
-AutoMapper, needs no configuration at all, and allocates the least of the three.
+**Generated code is level with hand written.** Not "close to". The same 1.41 KB, and 0.3 ns apart on
+a 288 ns call, with standard deviations near 3 ns. There is nothing left to win here.
 
-The honest summary of both tables: declare the pair and Mapsicle is hand written speed; do not, and
-it lands between Mapperly and AutoMapper while asking for nothing.
+**The third row is the same code reached a different way.** `((object)order).MapTo<OrderDto>()` runs
+the identical generated method; it just pays a `GetType`, a dictionary probe for the delegate, a
+second probe to decide on depth tracking and a cast to get there. That 21 ns is what declaring the
+pair buys you, and it is the whole reason the generator exists.
+
+**Mapperly's 1.12 is one habit.** Its collection helpers take `IReadOnlyCollection<T>` where the
+source member is a `List<T>`, so every `foreach` boxes the struct enumerator on the heap and
+dispatches through an interface. Measured in isolation on four collections holding five items, that
+costs 38.5 ns and 120 bytes against an indexed loop over the concrete type. The whole-graph gap is
+33.4 ns and 90 bytes. It is the same thing, and it is why the allocation column is the only one
+where Mapperly is above the baseline.
+
+None of this is a criticism of Mapperly, which is an excellent library and was 11 percent from the
+speed limit before anyone went looking. It is a reminder that a generated mapper is only as good as
+the loop it decides to write.
 
 ## This is a sample, not a template
 
