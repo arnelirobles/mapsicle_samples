@@ -86,14 +86,21 @@ Mapsicle matches by name because the rest of its cascade already does: an enum i
 `ToString`, and a string into an enum is a case insensitive `Enum.TryParse`. Matching by value would
 mean the same source arrives as `Amber` when it goes through a string and as `7` when it does not.
 
-Reproduce it: [`bench/Shop.Benchmarks`](bench/Shop.Benchmarks) or the probe described in
-Mapsicle's `ConversionGapTests`.
+Pinned in Mapsicle by `ConversionGapTests.AnEnumIsMatchedByNameNotByValue`, which fails if the rule
+ever changes to by value.
 
 ## The cycle
 
 `Order.Customer.Orders[0]` is the order. Point a mapper at a destination that exposes the back
-reference and the three do three different things. Measured on .NET 8, Release, with the probe in
-this repository's history:
+reference and the three do three different things. Run it yourself, one at a time, because one of
+them ends the process:
+
+```bash
+dotnet run --project probes/CycleProbe -- mapsicle     # cycle expanded to 15 levels, then stopped
+dotnet run --project probes/CycleProbe -- automapper   # reference preserved
+dotnet run --project probes/CycleProbe -- mapperly     # Stack overflow. exit 134
+```
+
 
 | | On a cycle |
 |---|---|
@@ -142,7 +149,56 @@ Two things follow that are worth knowing before you try this on your own code:
 
 ## Numbers
 
-<!-- BENCHMARKS -->
+Apple M1, .NET 8.0.24, Release, BenchmarkDotNet 0.13.12 default job. `dotnet run -c Release
+--project bench/Shop.Benchmarks -- --filter '*'`.
+
+### The flat pair: `Order` into `OrderSummaryDto`
+
+Five members, no nesting. Every entry maps the same source into the same destination, including the
+baseline.
+
+| | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| hand written | 12.91 ns | 1.00 | 64 B |
+| **Mapsicle, compile-time bound** | **12.74 ns** | **1.00** | 64 B |
+| Mapperly | 13.18 ns | 1.03 | 64 B |
+| Mapsicle, registry lookup | 43.60 ns | 3.41 | 64 B |
+| AutoMapper | 59.97 ns | 4.69 | 64 B |
+
+The first three are the same number. Mapsicle bound at compile time, Mapperly and code a person
+would write are indistinguishable at this scale, and reading anything into the ordering between them
+would be reading noise: the standard deviations are around 1 ns on a 13 ns mean.
+
+The gap that is real is the one below them. A declared pair reached through an untyped call site,
+`((object)order).MapTo<OrderSummaryDto>()`, runs the identical generated delegate and costs 3.4x,
+because the source's runtime type has to be looked up first. Same code, different way in.
+
+All five allocate exactly the destination object and nothing else.
+
+### The whole graph: `Order` into `OrderDto`
+
+Nine types, three levels deep, two collections. Mapsicle's generator refuses this pair, so its entry
+is the runtime engine. No hand written baseline: this projection is around sixty lines by hand, and
+keeping it correct is the work these libraries exist to remove.
+
+| | Mean | Ratio | Allocated |
+|---|---:|---:|---:|
+| Mapperly | 396.1 ns | 1.00 | 1.52 KB |
+| Mapsicle, engine | 639.7 ns | 1.62 | 1.41 KB |
+| AutoMapper | 852.3 ns | 2.16 | 1.48 KB |
+
+Mapperly wins, and it should: it emits straight-line C# for every type in the graph. Mapsicle's
+engine is 1.6x that with no configuration at all, and allocates the least of the three. AutoMapper
+is 2.2x Mapperly, with nine `CreateMap` calls to keep in sync.
+
+The honest summary of both tables: declare the pair and Mapsicle is hand written speed; do not, and
+it sits between Mapperly and AutoMapper while asking for nothing.
+
+## This is a sample, not a template
+
+The API has no authentication, no authorization and no rate limiting, and it logs SQL to the
+console. It exists to show three mappers producing the same object. Do not lift `Program.cs` into
+anything that faces a network.
 
 ## Layout
 
@@ -154,6 +210,7 @@ src/Shop.Api/
   Data/ShopContext.cs      EF Core, SQLite, seeded on first run
   Program.cs               minimal API: CRUD plus /compare
 bench/Shop.Benchmarks/     BenchmarkDotNet
+probes/CycleProbe/         the cycle table above, runnable
 ```
 
 ## Endpoints
@@ -178,5 +235,9 @@ published package. That is how these samples were verified before 2.2.0 shipped.
 with `-p:UseLocalMapsicle=false`.
 
 ## Versions
+
+Mapsicle 2.2.0 is not on NuGet yet. Until it is, clone
+[BaryoDev/Mapsicle](https://github.com/BaryoDev/Mapsicle) beside this repository as `../Mapsicle`
+and the build picks it up automatically.
 
 Mapsicle 2.2.0, AutoMapper 15.1.3, Riok.Mapperly 4.1.1, EF Core 8.0.30, .NET 8.

@@ -7,6 +7,9 @@
   <Folder Name="/src/">
     <Project Path="src/Shop.Api/Shop.Api.csproj" />
   </Folder>
+  <Folder Name="/probes/">
+    <Project Path="probes/CycleProbe/CycleProbe.csproj" />
+  </Folder>
   <Folder Name="/bench/">
     <Project Path="bench/Shop.Benchmarks/Shop.Benchmarks.csproj" />
   </Folder>

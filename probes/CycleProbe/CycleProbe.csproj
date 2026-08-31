@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UsesMapsicle>true</UsesMapsicle>
+    <!-- Mapperly reports every unmapped source member. Here there are none worth reporting. -->
+    <NoWarn>RMG020</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" />
+    <PackageReference Include="Riok.Mapperly" />
+  </ItemGroup>
+
+</Project>
