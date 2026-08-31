@@ -167,7 +167,9 @@ baseline.
 
 The first three are the same number. Mapsicle bound at compile time, Mapperly and code a person
 would write are indistinguishable at this scale, and reading anything into the ordering between them
-would be reading noise: the standard deviations are around 1 ns on a 13 ns mean.
+would be reading noise: the standard deviations are around 1 ns on a 13 ns mean, and a second full
+run put Mapsicle at 11.81 ns and hand written at 13.57 ns, swapping them. The claim this table
+supports is "the same", not "faster".
 
 The gap that is real is the one below them. A declared pair reached through an untyped call site,
 `((object)order).MapTo<OrderSummaryDto>()`, runs the identical generated delegate and costs 3.4x,
@@ -183,16 +185,23 @@ keeping it correct is the work these libraries exist to remove.
 
 | | Mean | Ratio | Allocated |
 |---|---:|---:|---:|
-| Mapperly | 396.1 ns | 1.00 | 1.52 KB |
-| Mapsicle, engine | 639.7 ns | 1.62 | 1.41 KB |
-| AutoMapper | 852.3 ns | 2.16 | 1.48 KB |
+| Mapperly | 383.4 ns | 1.00 | 1.50 KB |
+| Mapsicle, engine | 529.9 ns | 1.39 | 1.41 KB |
+| AutoMapper | 946.8 ns | 2.74 | 1.48 KB |
 
-Mapperly wins, and it should: it emits straight-line C# for every type in the graph. Mapsicle's
-engine is 1.6x that with no configuration at all, and allocates the least of the three. AutoMapper
-is 2.2x Mapperly, with nine `CreateMap` calls to keep in sync.
+Read the ratios as a range, not as those three digits. A second full run of the identical benchmark
+gave Mapperly 396 ns, Mapsicle 640 ns and AutoMapper 852 ns, so across two runs Mapsicle's engine is
+**1.4x to 1.6x** Mapperly and AutoMapper is **2.2x to 2.7x** it. BenchmarkDotNet's error column
+measures consistency inside one process; it says nothing about whether a second run agrees, and here
+it does not. AutoMapper is the least stable of the three either way: 257 ns standard deviation on a
+947 ns mean in the run above.
+
+What holds across both runs is the ordering and the allocation. Mapperly wins, and it should: it
+emits straight-line C# for every type in the graph. Mapsicle's engine sits between it and
+AutoMapper, needs no configuration at all, and allocates the least of the three.
 
 The honest summary of both tables: declare the pair and Mapsicle is hand written speed; do not, and
-it sits between Mapperly and AutoMapper while asking for nothing.
+it lands between Mapperly and AutoMapper while asking for nothing.
 
 ## This is a sample, not a template
 
