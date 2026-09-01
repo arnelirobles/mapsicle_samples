@@ -2,6 +2,7 @@ using AutoMapper;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using Mapsicle;
+using Mapster;
 using Riok.Mapperly.Abstractions;
 using Shop.Api.Contracts;
 using Shop.Api.Data;
@@ -107,11 +108,17 @@ public class WholeAggregate
     [Benchmark(Description = "Mapsicle, engine")]
     public OrderDto? Mapsicle() => ((object)_order).MapTo<OrderDto>();
 
+    [Benchmark(Description = "Mapster")]
+    public OrderDto MapsterLane() => _order.Adapt<OrderDto>();
+
     [Benchmark(Description = "AutoMapper")]
     public OrderDto AutoMapper() => _autoMapper.Map<OrderDto>(_order);
 }
 
-[Mapper]
+// Fully qualified, because "using Mapster" alongside AutoMapper and Mapsicle makes the bare name
+// Mapper ambiguous and this attribute stops resolving. Worth knowing before you put all four in one
+// project.
+[Riok.Mapperly.Abstractions.Mapper]
 public partial class SummaryMapper
 {
     public partial OrderSummaryDto Map(Order source);

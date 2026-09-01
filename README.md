@@ -1,10 +1,10 @@
 # mapsicle_samples
 
 One e-commerce order aggregate, mapped by [Mapsicle](https://github.com/BaryoDev/Mapsicle),
-[AutoMapper](https://github.com/AutoMapper/AutoMapper) and [Mapperly](https://github.com/riok/mapperly),
-in a working CRUD API over SQLite.
+[AutoMapper](https://github.com/AutoMapper/AutoMapper), [Mapperly](https://github.com/riok/mapperly)
+and [Mapster](https://github.com/MapsterMapper/Mapster), in a working CRUD API over SQLite.
 
-The point is not that one wins. It is that the same graph goes through all three in the same process,
+The point is not that one wins. It is that the same graph goes through all four in the same process,
 so the differences are visible without a debugger and without taking anyone's word for it.
 
 ```bash
@@ -37,9 +37,15 @@ three side by side.
 
 | | Setup code | Build warnings | Runtime cost of a missed member |
 |---|---|---|---|
-| **Mapsicle** | none, or one line per pair to bind it at compile time | none | there is nothing to miss |
+| **Mapsicle** | none, or one line per pair to bind it at compile time, or one line for the whole assembly | none | there is nothing to miss |
+| **Mapster** | none | none | there is nothing to miss |
 | **Mapperly** | 1 partial method | 12 `RMG020` | a build warning, before you ship |
 | **AutoMapper** | 9 `CreateMap` calls | none | the member comes back empty |
+
+Mapster is the closest neighbour here and the most interesting comparison: it also maps by
+convention with no setup at all, it is also MIT, and its configuration API is deliberately shaped
+like AutoMapper's to make a port mechanical. The differences show up on shapes rather than on
+ceremony, which is what `/compare` and the cycle probe are for.
 
 Mapsicle needs no configuration at all: `order.MapTo<OrderDto>()` and nothing else. Mapperly needs
 one declared method, and for this graph it derives the enum conversion, the widening, the
@@ -99,14 +105,23 @@ them ends the process:
 dotnet run --project probes/CycleProbe -- mapsicle     # cycle expanded to 15 levels, then stopped
 dotnet run --project probes/CycleProbe -- automapper   # reference preserved
 dotnet run --project probes/CycleProbe -- mapperly     # Stack overflow. exit 134
+dotnet run --project probes/CycleProbe -- mapster      # Stack overflow. exit 134
+dotnet run --project probes/CycleProbe -- mapster-safe # PreserveReference on: reference preserved
 ```
 
 
-| | On a cycle |
-|---|---|
-| **AutoMapper** 15.1.3 | Preserves the reference. The mapped object *is* its own `Customer.Orders[0]`, so the cycle survives the mapping intact. |
-| **Mapsicle** 2.2.0 | Expands it to a depth ceiling, 15 levels, then stops. Terminates and returns a usable object, but the output holds 15 distinct copies where the input had one. |
-| **Mapperly** 4.1.1 | Follows it until the stack overflows. The process aborts, exit 134. |
+| | On a cycle, default settings | With cycle handling on |
+|---|---|---|
+| **AutoMapper** 15.1.3 | Preserves the reference. The cycle survives the mapping intact. | same |
+| **Mapsicle** 2.2.0 | Stops on a repeated instance and returns a usable object. | same |
+| **Mapperly** 4.1.1 | **Stack overflow.** The process aborts, exit 134. | preserves the reference |
+| **Mapster** 7.4.0 | **Stack overflow.** The process aborts, exit 134. | preserves the reference |
+
+Both source generators handle every cycle shape correctly with one line, `UseReferenceHandling` on
+Mapperly and `PreserveReference` on Mapster, so this is a story about a default rather than about
+two broken libraries. It is worth knowing which default you have, because an Entity Framework entity
+with a navigation back to its parent is the most ordinary graph in .NET and it is the shape that
+does it.
 
 AutoMapper has the best answer here and it is worth saying so plainly: its output has the same shape
 as its input. Mapsicle's is safe but lossy. Mapperly's takes the process with it.
@@ -244,7 +259,7 @@ samples/GenerateAll/       one attribute instead of one declaration per pair
 
 | | |
 |---|---|
-| `GET /orders?mapper=` | all orders, through `mapsicle`, `mapperly` or `automapper` |
+| `GET /orders?mapper=` | all orders, through `mapsicle`, `mapperly`, `mapster` or `automapper` |
 | `GET /orders/{id}?mapper=` | one order |
 | `GET /orders/{id}/summary` | the flat projection, through generated code |
 | `POST /orders` | create, from a request DTO holding only what a caller may set |
@@ -267,4 +282,4 @@ Mapsicle 2.2.0 is not on NuGet yet. Until it is, clone
 [BaryoDev/Mapsicle](https://github.com/BaryoDev/Mapsicle) beside this repository as `../Mapsicle`
 and the build picks it up automatically.
 
-Mapsicle 2.2.0, AutoMapper 15.1.3, Riok.Mapperly 4.1.1, EF Core 8.0.30, .NET 8.
+Mapsicle 2.2.0, AutoMapper 15.1.3, Riok.Mapperly 4.1.1, Mapster 7.4.0, EF Core 8.0.30, .NET 8.

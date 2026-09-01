@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" />
     <PackageReference Include="Riok.Mapperly" />
+    <PackageReference Include="Mapster" />
   </ItemGroup>
 
 </Project>

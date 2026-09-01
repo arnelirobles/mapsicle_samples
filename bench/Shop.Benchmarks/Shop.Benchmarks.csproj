@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="Mapster" />
     <ProjectReference Include="..\..\src\Shop.Api\Shop.Api.csproj" />
   </ItemGroup>
 

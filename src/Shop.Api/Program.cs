@@ -16,10 +16,14 @@ builder.Services.AddSwaggerGen();
 // served through any of them, which is what makes the comparison honest: same data, same route.
 builder.Services.AddSingleton<MapsicleOrderMapper>();
 builder.Services.AddSingleton<MapperlyOrderMapper>();
+builder.Services.AddSingleton<MapsterOrderMapper>();
 builder.Services.AddSingleton<AutoMapperOrderMapper>();
 builder.Services.AddSingleton<MapperRegistry>();
 
 var app = builder.Build();
+
+// Compiled once so the first request does not pay for it, the same courtesy the other three get.
+Mapster.TypeAdapterConfig.GlobalSettings.Compile();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -157,11 +161,12 @@ static Dictionary<string, string?> Probe(IOrderMapper mapper, Order order)
 public sealed class MapperRegistry(
     MapsicleOrderMapper mapsicle,
     MapperlyOrderMapper mapperly,
+    MapsterOrderMapper mapster,
     AutoMapperOrderMapper autoMapper)
 {
-    public IReadOnlyList<IOrderMapper> All { get; } = [mapsicle, mapperly, autoMapper];
+    public IReadOnlyList<IOrderMapper> All { get; } = [mapsicle, mapperly, mapster, autoMapper];
 
-    public static string Names => "mapper must be one of: mapsicle, mapperly, automapper";
+    public static string Names => "mapper must be one of: mapsicle, mapperly, mapster, automapper";
 
     public IOrderMapper? Resolve(string? name) =>
         string.IsNullOrWhiteSpace(name)
