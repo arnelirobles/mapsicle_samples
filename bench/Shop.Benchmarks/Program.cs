@@ -10,6 +10,7 @@ using Shop.Api.Domain;
 using Shop.Api.Mapping;
 
 [assembly: MapsicleGenerate(typeof(Order), typeof(OrderSummaryDto))]
+[assembly: MapsicleGenerate(typeof(Order), typeof(OrderDto))]
 
 BenchmarkRunner.Run([typeof(FlatProjection), typeof(WholeAggregate)]);
 
@@ -102,11 +103,25 @@ public class WholeAggregate
         _ = _mapperly.Map(_order);
     }
 
-    [Benchmark(Baseline = true, Description = "Mapperly")]
-    public OrderDto Mapperly() => _mapperly.Map(_order);
+    // The baseline is the same projection written out by hand, because that is the only number
+    // worth measuring against. Using one of the mappers as the baseline tells you which mapper is
+    // faster and never tells you how far any of them is from the ceiling.
+    [Benchmark(Baseline = true, Description = "hand written")]
+    public OrderDto Handwritten() => HandWritten.Map(_order);
 
-    [Benchmark(Description = "Mapsicle, engine")]
-    public OrderDto? Mapsicle() => ((object)_order).MapTo<OrderDto>();
+    [Benchmark(Description = "Mapsicle, pair declared")]
+    public OrderDto? MapsicleDeclared() => _order.MapTo<OrderDto>();
+
+    // The same generated code reached through an untyped call site, which pays a lookup to find it.
+    [Benchmark(Description = "Mapsicle, declared, untyped call")]
+    public OrderDto? MapsicleUntyped() => ((object)_order).MapTo<OrderDto>();
+
+    // No declaration for this pair, so the engine compiles an expression tree for it.
+    [Benchmark(Description = "Mapsicle, nothing declared")]
+    public UndeclaredOrderDto? MapsicleEngine() => ((object)_order).MapTo<UndeclaredOrderDto>();
+
+    [Benchmark(Description = "Mapperly")]
+    public OrderDto Mapperly() => _mapperly.Map(_order);
 
     [Benchmark(Description = "Mapster")]
     public OrderDto MapsterLane() => _order.Adapt<OrderDto>();

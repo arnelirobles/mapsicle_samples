@@ -204,36 +204,45 @@ All five allocate exactly the destination object and nothing else.
 ### The whole graph: `Order` into `OrderDto`
 
 Nine types, three levels deep, two collections, a widening, an enum into a string, an enum into a
-different enum and two flattened paths. Measured on a quiet machine against the same projection
-written out by hand, which is the only baseline worth having.
+different enum and two flattened paths. Every lane maps the same object and is checked against the
+hand written baseline member by member before a single timing is taken.
 
 | | Mean | vs hand written | Allocated |
 |---|---:|---:|---:|
-| hand written | 288.1 ns | 1.00 | 1.41 KB |
-| **Mapsicle, generated** | **288.4 ns** | **1.00** | **1.41 KB (1.00)** |
-| Mapsicle, generated via an untyped call site | 309.7 ns | 1.07 | 1.41 KB (1.00) |
-| Mapperly | 321.5 ns | 1.12 | 1.50 KB (1.07) |
+| hand written | 288.5 ns | 1.00 | 1.41 KB |
+| **Mapsicle, pair declared** | **287.7 ns** | **1.00** | **1.41 KB** |
+| Mapperly 4.1.1 | 312.8 ns | 1.08 | 1.50 KB |
+| Mapster 7.4.0 | 313.7 ns | 1.09 | 1.38 KB |
+| Mapsicle, declared, untyped call | 316.1 ns | 1.10 | 1.41 KB |
+| Mapsicle, nothing declared | 519.5 ns | 1.80 | 1.41 KB |
+| AutoMapper 15.1.3 | 715.8 ns | 2.48 | 1.48 KB |
 
-Three things in that table are worth more than the ordering.
+**The baseline is hand written code, not one of the mappers.** Using a mapper as the baseline tells
+you which mapper is faster and never tells you how far any of them is from the ceiling.
 
-**Generated code is level with hand written.** Not "close to". The same 1.41 KB, and 0.3 ns apart on
-a 288 ns call, with standard deviations near 3 ns. There is nothing left to win here.
+**Read the middle of that table as a range, not as a ranking.** Mapperly and Mapster are 1.08 and
+1.09 here and have swapped places between runs. The three modern mappers sit inside ten percent of
+each other and of hand written code, and nobody migrates a codebase for ten percent.
 
-**The third row is the same code reached a different way.** `((object)order).MapTo<OrderDto>()` runs
-the identical generated method; it just pays a `GetType`, a dictionary probe for the delegate, a
-second probe to decide on depth tracking and a cast to get there. That 21 ns is what declaring the
-pair buys you, and it is the whole reason the generator exists.
+**What holds across every run is the two ends.** A declared pair is level with hand written code and
+allocates the same. An undeclared one is 1.80, which is still 1.4x faster than AutoMapper and is what
+you get with no setup at all.
 
-**Mapperly's 1.12 is one habit.** Its collection helpers take `IReadOnlyCollection<T>` where the
-source member is a `List<T>`, so every `foreach` boxes the struct enumerator on the heap and
-dispatches through an interface. Measured in isolation on four collections holding five items, that
-costs 38.5 ns and 120 bytes against an indexed loop over the concrete type. The whole-graph gap is
-33.4 ns and 90 bytes. It is the same thing, and it is why the allocation column is the only one
-where Mapperly is above the baseline.
+**The third Mapsicle row is the same generated code reached a different way.**
+`((object)order).MapTo<OrderDto>()` runs the identical emitted method; it just pays a lookup to find
+it, because the receiver's type is not known until it runs. That 28 ns is what declaring the pair
+buys.
 
-None of this is a criticism of Mapperly, which is an excellent library and was 11 percent from the
-speed limit before anyone went looking. It is a reminder that a generated mapper is only as good as
-the loop it decides to write.
+**Mapster allocates the least of anyone**, including hand written code, at 1.38 KB.
+
+Cold start is the larger and less obvious difference:
+
+| first map of a pair | |
+| :------------------ | -----: |
+| declared             | 2,480 ns |
+| undeclared           | 367,138 ns |
+
+That 148x is the `Expression.Compile` a declared pair never pays.
 
 ## This is a sample, not a template
 
