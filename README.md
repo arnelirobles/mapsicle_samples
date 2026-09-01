@@ -237,6 +237,7 @@ src/Shop.Api/
   Program.cs               minimal API: CRUD plus /compare
 bench/Shop.Benchmarks/     BenchmarkDotNet
 probes/CycleProbe/         the cycle table above, runnable
+samples/GenerateAll/       one attribute instead of one declaration per pair
 ```
 
 ## Endpoints

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UsesMapsicle>true</UsesMapsicle>
+
+    <!-- So you can read what the one attribute produced. Not required to use the feature. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <!-- Required whenever EmitCompilerGeneratedFiles is on. The files land inside the project
+       directory, so the SDK globs them back in and every generated type is defined twice. -->
+  <ItemGroup>
+    <Compile Remove="generated/**" />
+  </ItemGroup>
+
+</Project>
