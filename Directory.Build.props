@@ -9,7 +9,7 @@
 
   <!--
     Builds against the published packages by default. If a Mapsicle checkout sits beside this one,
-    it builds against that instead, which is how the samples were verified before 2.2.0 shipped.
+    it builds against that instead, for trying unreleased changes.
     Set UseLocalMapsicle=false to force the packages even when the checkout is there.
   -->
   <PropertyGroup>

@@ -86,7 +86,7 @@ Mapping `SrcColour.Amber = 7` into a destination enum whose `Amber = 2`:
 |---|---|
 | AutoMapper 15.1.3 | `Amber` (2), matched by name |
 | Mapperly 4.1.1 | `7`, matched by value, naming no member of the destination |
-| Mapsicle 2.2.0 | `Amber` (2), matched by name |
+| Mapsicle 2.5.0 | `Amber` (2), matched by name |
 
 Mapsicle matches by name because the rest of its cascade already does: an enum into a string is
 `ToString`, and a string into an enum is a case insensitive `Enum.TryParse`. Matching by value would
@@ -113,7 +113,7 @@ dotnet run --project probes/CycleProbe -- mapster-safe # PreserveReference on: r
 | | On a cycle, default settings | With cycle handling on |
 |---|---|---|
 | **AutoMapper** 15.1.3 | Preserves the reference. The cycle survives the mapping intact. | same |
-| **Mapsicle** 2.2.0 | Stops on a repeated instance and returns a usable object. | same |
+| **Mapsicle** 2.5.0 | Stops on a repeated instance and returns a usable object. | same |
 | **Mapperly** 4.1.1 | **Stack overflow.** The process aborts, exit 134. | preserves the reference |
 | **Mapster** 7.4.0 | **Stack overflow.** The process aborts, exit 134. | preserves the reference |
 
@@ -175,6 +175,8 @@ Two things worth knowing before you try this on your own code:
 
 Apple M1, .NET 8.0.24, Release, BenchmarkDotNet 0.13.12 default job. `dotnet run -c Release
 --project bench/Shop.Benchmarks -- --filter '*'`.
+
+All numbers below were measured on Mapsicle 2.2.0 and have not been re-run on 2.5.0.
 
 ### The flat pair: `Order` into `OrderSummaryDto`
 
@@ -282,13 +284,13 @@ all three of these, and the DTO is the control.
 ## Running against a local Mapsicle checkout
 
 If a Mapsicle checkout sits beside this one at `../Mapsicle`, the build uses it instead of the
-published package. That is how these samples were verified before 2.2.0 shipped. Force the package
-with `-p:UseLocalMapsicle=false`.
+published package. Use that to try unreleased changes. Force the package with
+`-p:UseLocalMapsicle=false`.
 
 ## Versions
 
-Mapsicle 2.2.0 is not on NuGet yet. Until it is, clone
-[BaryoDev/Mapsicle](https://github.com/BaryoDev/Mapsicle) beside this repository as `../Mapsicle`
-and the build picks it up automatically.
+Mapsicle and Mapsicle.SourceGen 2.5.0, AutoMapper 15.1.3, Riok.Mapperly 4.1.1, Mapster 7.4.0,
+EF Core 8.0.30, .NET 8.
 
-Mapsicle 2.2.0, AutoMapper 15.1.3, Riok.Mapperly 4.1.1, Mapster 7.4.0, EF Core 8.0.30, .NET 8.
+The enum and cycle results above were re-checked on 2.5.0. The benchmark numbers were measured on
+2.2.0.
